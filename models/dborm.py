@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
 import MySQLdb
 import logging
 from config import DATABASE_IP as ip
@@ -41,13 +43,12 @@ class DbOrm(object):
         """
         Select procedure from table.
         Set where = {field: 'value', ... } to add WHERE condition.
-        Set orderBy = {field1: 'INC', field2: 'DEC'} to add ORDER BY condition.
+        Set orderBy = {field1: 'ASC', field2: 'DESC'} to add ORDER BY condition.
         """
-        self.check_params(table_name=table_name,
-                          columns=columns)
+        self._check_params(table_name=table_name, columns=columns)
 
         cols = ', '.join(columns)
-        sql = 'select {0} from {1} {2}'.format(cols, table_name)
+        sql = 'select {0} from {1}'.format(cols, table_name)
 
         where = kvargs.get('where')
         if where is not None and isinstance(where, dict):
@@ -73,9 +74,9 @@ class DbOrm(object):
         """
         Updating current table.
         """
-        self.check_params(table_name=table_name,
-                          params=params,
-                          condition=condition)
+        self._check_params(table_name=table_name,
+                           params=params,
+                           condition=condition)
 
         querySet = ', '.join('{0}={1}'.format(key, value)
                              for key, value in params.items())
@@ -86,7 +87,7 @@ class DbOrm(object):
                                                     where)
 
         try:
-            cursor = self.dbself.cursor()
+            cursor = self.db.cursor()
             cursor.execute(sql)
             self.db.commit()
             return True
@@ -95,23 +96,17 @@ class DbOrm(object):
             self.db.rollback()
             return False
 
-    def insert(self, table_name, params, condition):
+    def insert(self, table_name, params):
         """
         Inserting data to existing table.
         """
-        self._check_params(table_name=table_name,
-                           params=params,
-                           condition=condition)
+        self._check_params(table_name=table_name, params=params)
 
         keys = ", ".join("{}".format(key) for key in params)
         vals = ", ".join("'{}'".format(params[key]) for key in params)
         values = "({0}) values ({1})".format(keys, vals)
-        where = ' and '.join('{0}={1}'.format(key, value)
-                             for key, value in condition.items())
 
-        sql = "insert into {0} {1} where {2}".format(table_name,
-                                                     values,
-                                                     where)
+        sql = "insert into {0} {1}".format(table_name, values)
 
         try:
             cursor = self.db.cursor()
@@ -145,9 +140,10 @@ class DbOrm(object):
             return True
         except Exception as e:
             self.logger.error(e)
+            self.db.rollback()
             return False
 
-    def _check_params(**kvargs):
+    def _check_params(self, **kvargs):
         """
         Cheking inner function parameters.
         """
