@@ -22,8 +22,6 @@ class User(object):
         self_l = self.fields
         unset_args = [a for a in self_l if a not in args_l and a is not 'id']
 
-        print(unset_args)
-
         if len(unset_args) > 0:
             arg_str = ', '.split(unset_args)
             msg = 'Not enought arguments. Needed {0}'.format(arg_str)
@@ -38,12 +36,18 @@ class User(object):
             for key, value in kvargs:
                 if kvargs.get(key) is not None and key in self.__dict__:
                     self.__dict__[key] = value
+            self.cursor = None
+            self.index = 0
 
         return result
 
     def delete_user(self, user_id):
         """Deleting user by id."""
-        return self._orm.delete(self._table_name, {'id': user_id})
+        result = self._orm.delete(self._table_name, {'id': user_id})
+        if result is True:
+            self.index = 0
+            self.cursor = None
+        return result
 
     def update_user_data(self, user_id, **kvargs):
         """Updating some user fields."""
@@ -71,6 +75,8 @@ class User(object):
         for field in self.fields:
             self.__dict__[field] = result[0][self.fields.index(field)]
 
+        self.index = 0
+        self.cursor = result
         return True
 
     def select_users(self):
@@ -84,10 +90,33 @@ class User(object):
         for field in self.fields:
             self.__dict__[field] = result[0][self.fields.index(field)]
 
+        self.index = 0
+        self.cursor = result
+
         return True
 
     def __repr__(self):
         return 'id:{0} user:{1}'.format(self.id, self.fullName)
+
+    def __len__(self):
+        return len(self.cursor)
+
+    def __iter__(self):
+        if self.cursor is None:
+            raise StopIteration
+        if len(self.cursor) < (self.index + 1):
+            raise StopIteration
+        return iter(self.cursor)
+
+    def __next__(self):
+        if self.cursor is None:
+            raise StopIteration
+        if len(self.cursor) < (self.index + 1):
+            raise StopIteration
+        self.index += 1
+        for field in self.fields:
+            field_index = self.fields.index(field)
+            self.__dict__[field] = self.cursor[self.index][field_index]
 
     def _initfields(self):
         """Init service fields for model."""
@@ -100,3 +129,6 @@ class User(object):
                        'role_id']
         for field in self.fields:
             self.__dict__[field] = None
+
+        self.index = 0
+        self.cursor = None
