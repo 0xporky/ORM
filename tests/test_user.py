@@ -79,7 +79,7 @@ class UserTest(unittest.TestCase):
                                        avatar='avatar.jpg',
                                        isActive=1,
                                        role_id=2)
-        self.assertTrue(result)
+        self.assertNotEquals(result, -1)
 
     def test_user_delete(self):
         """Deleting user from database."""
