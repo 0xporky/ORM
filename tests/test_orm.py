@@ -20,6 +20,9 @@ class OrmTest(unittest.TestCase):
         db = MySQLdb.connect(ip, user, password)
         cursor = db.cursor()
 
+        cursor.execute('DROP DATABASE IF EXISTS {0}'.format(db_name))
+        db.commit()
+
         cursor.execute('CREATE DATABASE {0}'.format(db_name))
         db.commit()
         db.close()

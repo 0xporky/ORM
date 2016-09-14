@@ -85,7 +85,6 @@ class DbOrm(object):
         sql = 'update {0} set {1} where {2}'.format(table_name,
                                                     querySet,
                                                     where)
-
         try:
             cursor = self.db.cursor()
             cursor.execute(sql)
